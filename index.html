@@ -48,6 +48,7 @@ h2{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mu
 .st{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:6px;padding:4px 10px;font:inherit;font-size:.82rem;cursor:pointer}
 .st[aria-pressed="true"][data-s="new"]{background:var(--s-new-bg);color:var(--s-new);border-color:transparent;font-weight:600}
 .st[aria-pressed="true"][data-s="keep"]{background:var(--s-keep-bg);color:var(--s-keep);border-color:transparent;font-weight:600}
+.st[aria-pressed="true"][data-s="later"]{background:#ece6fa;color:#5b3fb0;border-color:transparent;font-weight:600}
 .st[aria-pressed="true"][data-s="wrote"]{background:var(--s-wrote-bg);color:var(--s-wrote);border-color:transparent;font-weight:600}
 .st[aria-pressed="true"][data-s="drop"]{background:var(--s-drop-bg);color:var(--s-drop);border-color:transparent;font-weight:600}
 textarea{width:100%;min-height:38px;resize:vertical;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);font:inherit;font-size:.9rem;padding:7px 9px}
@@ -100,7 +101,7 @@ textarea{width:100%;min-height:38px;resize:vertical;border:1px solid var(--line)
 <script>
 const SUPABASE_URL="https://swprtuowqpuwgthigweq.supabase.co";
 const SUPABASE_KEY="sb_publishable_ssarpAvvqN9qsYQE468vjg_mGhppJB_";
-const STATUSES=[["new","Новое"],["keep","Интересно"],["wrote","Написал"],["drop","Не оставляем"]];
+const STATUSES=[["new","Новое"],["keep","Интересно"],["later","Посмотреть позже"],["wrote","Написал"],["drop","Не оставляем"]];
 const GROUPS=["Корея","Япония","Китай","Evolute"];
 let creds=null;
 try{creds=JSON.parse(localStorage.getItem("cars_creds")||"null")}catch(e){}
