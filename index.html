@@ -73,6 +73,10 @@ textarea{width:100%;min-height:38px;resize:vertical;border:1px solid var(--line)
   .st{min-height:44px;font-size:.92rem}
   textarea{font-size:16px;min-height:56px}
 }
+.car.hasph{grid-template-columns:140px 1fr;align-items:start;gap:12px}
+.body{display:grid;gap:8px;min-width:0}
+.ph{width:140px;height:105px;object-fit:cover;border-radius:8px;background:var(--line);display:block}
+@media (max-width:600px){.car.hasph{grid-template-columns:1fr}.ph{width:100%;height:190px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -152,7 +156,7 @@ function render(){
 }
 
 function card(r){
-  const d=el("article",{className:"car"+(r.status==="drop"?" drop":"")});
+  const w=el("article",{className:"car"+(r.status==="drop"?" drop":"")+(r.photo?" hasph":"")});const d=el("div",{className:"body"});if(r.photo){const im=el("img",{className:"ph",src:r.photo,loading:"lazy",alt:"",referrerPolicy:"no-referrer"});im.onerror=()=>{im.remove();w.classList.remove("hasph")};w.append(im)}w.append(d);
   const a=el("a",{className:"name",href:r.url,target:"_blank",rel:"noopener"},r.title+(r.year?", "+r.year:""));
   d.append(el("div",{className:"top"},a,el("span",{className:"price"},fmtPrice(r.price))));
   const meta=el("div",{className:"meta"});
@@ -169,7 +173,7 @@ function card(r){
   const sv=el("div",{className:"saved",id:"sv-"+r.id,role:"status"});
   let t;ta.oninput=()=>{pending.set(r.id,ta.value);clearTimeout(t);t=setTimeout(()=>commit(r.id,ta.value),900)};
   ta.onblur=()=>{clearTimeout(t);if(pending.has(r.id))commit(r.id,ta.value)};
-  d.append(ta,sv);return d;
+  d.append(ta,sv);return w;
 }
 
 async function commit(id,val){const cur=rows.find(r=>r.id===id);if(cur&&(cur.comment||"")===val){pending.delete(id);return}await save(id,{comment:val});pending.delete(id)}
