@@ -80,6 +80,11 @@ textarea{width:100%;min-height:38px;resize:vertical;border:1px solid var(--line)
 .body{display:grid;gap:8px;min-width:0}
 .ph{width:140px;height:105px;object-fit:cover;border-radius:8px;background:var(--line);display:block}
 @media (max-width:600px){.car.hasph{grid-template-columns:1fr}.ph{width:100%;height:190px}}
+.files{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.fbtn{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:6px;padding:4px 8px;font:inherit;font-size:.8rem;cursor:pointer;max-width:100%;text-align:left;overflow-wrap:anywhere}
+.fadd{position:relative;border:1px dashed var(--line);border-radius:6px;padding:4px 10px;font-size:.8rem;color:var(--muted);cursor:pointer}
+.fadd input{position:absolute;opacity:0;width:1px;height:1px;left:0;top:0}
+@media (max-width:600px){.fbtn,.fadd{min-height:40px;display:inline-flex;align-items:center}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -99,9 +104,11 @@ async function rpc(fn,args){
   const t=await r.text();return t?JSON.parse(t):null;
 }
 const app=document.getElementById("app");
-let rows=[],filter="active",canWrite=true,loadError="";
+let rows=[],files=[],filter="active",canWrite=true,loadError="";
 const pending=new Map(),writing=new Map();
 
+const fmtSize=n=>n>=1e6?(n/1e6).toFixed(1)+" МБ":Math.max(1,Math.round(n/1024))+" КБ";
+const filesFor=id=>files.filter(f=>f.car_id===id);
 const fmtPrice=n=>typeof n==="number"?n.toLocaleString("ru-RU")+" ₽":"";
 const fmtKm=n=>typeof n==="number"?(n/1000).toLocaleString("ru-RU",{maximumFractionDigits:1})+" тыс. км":"";
 const isFresh=r=>r.added&&(Date.now()-Date.parse(r.added))<36*3600e3;
@@ -117,14 +124,14 @@ function showLogin(msg){
   form.onsubmit=async e=>{
     e.preventDefault();btn.disabled=true;out.textContent="Проверяю…";
     creds={l:login.value.trim().toLowerCase(),p:pass.value};
-    try{const data=await rpc("cars_list",{});rows=data;loadError="";try{localStorage.setItem("cars_creds",JSON.stringify(creds))}catch(e){}render()}
+    try{const data=await rpc("cars_list",{});rows=data;loadError="";try{files=await rpc("car_files_all",{})}catch(e){}try{localStorage.setItem("cars_creds",JSON.stringify(creds))}catch(e){}render()}
     catch(err){creds=null;btn.disabled=false;out.textContent=err.unauth?"Неверный логин или пароль.":"Ошибка: "+err.message}
   };
   app.append(form);
 }
 
 async function load(){
-  try{rows=await rpc("cars_list",{});loadError=""}
+  try{rows=await rpc("cars_list",{});loadError="";try{files=await rpc("car_files_all",{})}catch(e){}}
   catch(err){if(err.unauth){try{localStorage.removeItem("cars_creds")}catch(e){}creds=null;showLogin("Сессия устарела, войдите снова.");return}loadError="Не удалось загрузить данные: "+err.message}
   render();
 }
@@ -133,7 +140,7 @@ function renderTabs(){
   const c={active:0,all:rows.length};STATUSES.forEach(([k])=>c[k]=0);
   rows.forEach(r=>{c[r.status]++;if(r.status!=="drop")c.active++});
   const bar=el("div",{className:"bar",role:"group"});bar.setAttribute("aria-label","Фильтр по статусу");
-  [["active","В работе"],...STATUSES,["all","Все"]].forEach(([k,l])=>{
+  [["active","В работе"],...STATUSES.map(([k,l])=>[k,k==="drop"?"Архив":l]),["all","Все"]].forEach(([k,l])=>{
     const b=el("button",{className:"tab",id:"tab-"+k},l+" ",el("b",{},String(c[k]||0)));
     b.setAttribute("aria-pressed",String(filter===k));b.onclick=()=>{filter=k;render()};bar.append(b)});
   return bar;
@@ -185,6 +192,33 @@ const chk=el("button",{className:"link"},"Проверить сейчас");chk.
   if(focusId){const f=document.getElementById(focusId);if(f){f.focus();if(f.tagName==="TEXTAREA"||(f.tagName==="INPUT"&&f.type==="text")){const n=f.value.length;f.setSelectionRange(n,n)}}}
 }
 
+function filesBox(r){
+  const box=el("div",{className:"files"});
+  filesFor(r.id).forEach(f=>{const b=el("button",{className:"fbtn",type:"button"},"📎 "+f.name+" ("+fmtSize(f.size)+")");b.onclick=()=>openFile(f,b);box.append(b)});
+  const inp=el("input",{type:"file",accept:".pdf,.jpg,.jpeg,.png,.webp"});
+  inp.disabled=!canWrite;
+  inp.onchange=()=>attach(r,inp);
+  box.append(el("label",{className:"fadd"},"+ отчёт или фото",inp));
+  return box;
+}
+async function openFile(f,btn){
+  const old=btn.textContent;btn.textContent="Открываю…";
+  try{
+    const data=await rpc("car_file_get",{p_id:f.id});
+    const bin=atob(data);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
+    const url=URL.createObjectURL(new Blob([u],{type:f.mime}));
+    const a=el("a",{href:url,download:f.name});document.body.append(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+  }catch(e){alert("Не открылось: "+e.message)}
+  btn.textContent=old;
+}
+async function attach(r,inp){
+  const f=inp.files&&inp.files[0];if(!f)return;
+  if(f.size>1500000){alert("Файл больше 1,5 МБ. Сожмите его или пришлите другой.");inp.value="";return}
+  const data=await new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(String(fr.result).split(",")[1]);fr.onerror=rej;fr.readAsDataURL(f)});
+  try{await rpc("car_file_add",{p_car:r.id,p_name:f.name,p_mime:f.type||"application/octet-stream",p_size:f.size,p_data:data});files=await rpc("car_files_all",{});render()}
+  catch(e){alert("Не загрузилось: "+e.message);inp.value=""}
+}
 function card(r){
   const w=el("article",{className:"car"+(r.status==="drop"?" drop":"")+(r.photo?" hasph":"")});const d=el("div",{className:"body"});if(r.photo){const im=el("img",{className:"ph",src:r.photo,loading:"lazy",alt:"",referrerPolicy:"no-referrer"});im.onerror=()=>{im.remove();w.classList.remove("hasph")};w.append(im)}w.append(d);
   const a=el("a",{className:"name",href:r.url,target:"_blank",rel:"noopener"},r.title+(r.year?", "+r.year:""));
@@ -203,7 +237,7 @@ function card(r){
   const sv=el("div",{className:"saved",id:"sv-"+r.id,role:"status"});
   let t;ta.oninput=()=>{pending.set(r.id,ta.value);clearTimeout(t);t=setTimeout(()=>commit(r.id,ta.value),900)};
   ta.onblur=()=>{clearTimeout(t);if(pending.has(r.id))commit(r.id,ta.value)};
-  d.append(ta,sv);return w;
+  d.append(ta,sv);d.append(filesBox(r));return w;
 }
 
 async function commit(id,val){const cur=rows.find(r=>r.id===id);if(cur&&(cur.comment||"")===val){pending.delete(id);return}await save(id,{comment:val});pending.delete(id)}
