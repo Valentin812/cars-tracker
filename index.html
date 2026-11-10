@@ -73,6 +73,9 @@ textarea{width:100%;min-height:38px;resize:vertical;border:1px solid var(--line)
   .st{min-height:44px;font-size:.92rem}
   textarea{font-size:16px;min-height:56px}
 }
+.flt{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:12px 0}
+.flt label{display:grid;gap:3px;font-size:.75rem;color:var(--muted)}
+.flt select,.flt input{width:100%;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--fg);font:inherit;font-size:16px;padding:7px 8px;min-height:40px}
 .car.hasph{grid-template-columns:140px 1fr;align-items:start;gap:12px}
 .body{display:grid;gap:8px;min-width:0}
 .ph{width:140px;height:105px;object-fit:cover;border-radius:8px;background:var(--line);display:block}
@@ -136,23 +139,48 @@ function renderTabs(){
   return bar;
 }
 
+const num=v=>{const n=parseFloat(String(v).replace(/\s/g,"").replace(",","."));return isNaN(n)?null:n};
+const F={city:"",km:"",price:"",dist:"",sort:"dist"};
+const SORTS={dist:["Ближе к Тюмени",(a,b)=>(a.distance??9999)-(b.distance??9999)],pricea:["Цена: дешевле",(a,b)=>(a.price||0)-(b.price||0)],priced:["Цена: дороже",(a,b)=>(b.price||0)-(a.price||0)],kma:["Пробег: меньше",(a,b)=>(a.km??1e9)-(b.km??1e9)],yeard:["Год: новее",(a,b)=>(b.year||0)-(a.year||0)],added:["Сначала новые",(a,b)=>Date.parse(b.added||0)-Date.parse(a.added||0)]};
+const cmp=(a,b)=>SORTS[F.sort][1](a,b)||(a.price||0)-(b.price||0);
+function passF(r){
+  if(F.city&&r.city!==F.city)return false;
+  const km=num(F.km);if(km!==null&&(r.km==null||r.km>km*1000))return false;
+  const pr=num(F.price);if(pr!==null&&(r.price==null||r.price>pr*1000))return false;
+  const d=num(F.dist);if(d!==null&&(r.distance==null||r.distance>d))return false;
+  return true;
+}
+function renderFilters(){
+  const box=el("div",{className:"flt"});
+  const mk=(label,ctrl)=>{const l=el("label",{},label);l.append(ctrl);return l};
+  const cities=[...new Set(rows.map(r=>r.city).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ru"));
+  const cs=el("select",{id:"f-city"},el("option",{value:""},"Все города"));
+  cities.forEach(c=>cs.append(el("option",{value:c,selected:F.city===c},c)));
+  cs.onchange=()=>{F.city=cs.value;render()};
+  const inp=(id,key,ph)=>{const i=el("input",{id,type:"text",inputMode:"numeric",placeholder:ph,value:F[key]});i.oninput=()=>{F[key]=i.value;render()};return i};
+  const ss=el("select",{id:"f-sort"});
+  Object.entries(SORTS).forEach(([k,v])=>ss.append(el("option",{value:k,selected:F.sort===k},v[0])));
+  ss.onchange=()=>{F.sort=ss.value;render()};
+  box.append(mk("Город",cs),mk("Цена до, тыс. ₽",inp("f-price","price","напр. 2000")),mk("Пробег до, тыс. км",inp("f-km","km","напр. 100")),mk("Расстояние до, км",inp("f-dist","dist","напр. 700")),mk("Сортировка",ss));
+  return box;
+}
 function render(){
   const focusId=document.activeElement&&document.activeElement.id;
   app.textContent="";
   const out=el("button",{className:"link"},"Выйти");out.onclick=()=>{try{localStorage.removeItem("cars_creds")}catch(e){}creds=null;rows=[];showLogin()};
   const ref=el("button",{className:"link"},"Обновить");ref.onclick=load;
   app.append(el("div",{className:"head"},el("div",{},el("h1",{},"Подбор 7-местного авто"),el("p",{className:"sub"},"Дром · Тюмень и дальше по удалённости · левый руль, автомат, документы в порядке, без ремонта. Объявлений: "+rows.length+", в работе: "+rows.filter(r=>r.status!=="drop").length+".")),el("div",{className:"row"},ref,out)));
-  app.append(renderTabs());
+  app.append(renderTabs());app.append(renderFilters());
   if(loadError)app.append(el("p",{className:"note"},loadError));
-  const vis=rows.filter(r=>filter==="all"||(filter==="active"?r.status!=="drop":r.status===filter));
+  const vis=rows.filter(r=>filter==="all"||(filter==="active"?r.status!=="drop":r.status===filter)).filter(passF);
   if(!vis.length){app.append(el("div",{className:"empty"},rows.length?"В этом статусе пока ничего нет.":"Объявлений пока нет."));return}
   [...GROUPS,...new Set(vis.map(r=>r.grp).filter(g=>!GROUPS.includes(g)))].forEach(g=>{
-    const items=vis.filter(r=>r.grp===g).sort((a,b)=>(a.distance??9999)-(b.distance??9999)||(a.price||0)-(b.price||0));
+    const items=vis.filter(r=>r.grp===g).sort(cmp);
     if(!items.length)return;
     app.append(el("h2",{},g+" · "+items.length));
     const list=el("div",{className:"list"});items.forEach(r=>list.append(card(r)));app.append(list);
   });
-  if(focusId){const f=document.getElementById(focusId);if(f){f.focus();if(f.tagName==="TEXTAREA"){const n=f.value.length;f.setSelectionRange(n,n)}}}
+  if(focusId){const f=document.getElementById(focusId);if(f){f.focus();if(f.tagName==="TEXTAREA"||(f.tagName==="INPUT"&&f.type==="text")){const n=f.value.length;f.setSelectionRange(n,n)}}}
 }
 
 function card(r){
@@ -160,7 +188,7 @@ function card(r){
   const a=el("a",{className:"name",href:r.url,target:"_blank",rel:"noopener"},r.title+(r.year?", "+r.year:""));
   d.append(el("div",{className:"top"},a,el("span",{className:"price"},fmtPrice(r.price))));
   const meta=el("div",{className:"meta"});
-  [fmtKm(r.km),r.specs,r.city,r.seller].filter(Boolean).forEach(t=>meta.append(el("span",{},t)));
+  [fmtKm(r.km),r.specs,(r.city?r.city+(r.distance>0?" · "+r.distance.toLocaleString("ru-RU")+" км от Тюмени":""):""),r.seller].filter(Boolean).forEach(t=>meta.append(el("span",{},t)));
   if(isFresh(r))meta.append(el("span",{className:"fresh"},"добавлено недавно"));
   if(r.flag)meta.append(el("span",{},"⚠ "+r.flag));
   d.append(meta);
@@ -192,7 +220,7 @@ function save(id,patch){
 }
 
 function start(){if(creds)load();else showLogin()}
-document.addEventListener("visibilitychange",()=>{if(!document.hidden&&creds&&!document.activeElement?.matches("textarea"))load()});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&creds&&!document.activeElement?.matches("textarea,input,select"))load()});
 start();
 </script>
 </body>
