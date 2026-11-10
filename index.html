@@ -168,9 +168,9 @@ function passF(r){
 function renderFilters(){
   const box=el("div",{className:"flt"});
   const mk=(label,ctrl)=>{const l=el("label",{},label);l.append(ctrl);return l};
-  const cities=[...new Set(rows.map(r=>r.city).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ru"));
+  const cd={};rows.forEach(r=>{if(r.city){const d=Number(r.distance)||0;cd[r.city]=cd[r.city]===undefined?d:Math.min(cd[r.city],d)}});const cities=Object.keys(cd).sort((a,b)=>cd[a]-cd[b]||a.localeCompare(b,"ru"));
   const cs=el("select",{id:"f-city"},el("option",{value:""},"Все города"));
-  cities.forEach(c=>cs.append(el("option",{value:c,selected:F.city===c},c)));
+  cities.forEach(c=>cs.append(el("option",{value:c,selected:F.city===c},c+(cd[c]>0?" — "+cd[c].toLocaleString("ru-RU")+" км":""))));
   cs.onchange=()=>{F.city=cs.value;render()};
   const inp=(id,key,ph)=>{const i=el("input",{id,type:"text",inputMode:"numeric",placeholder:ph,value:F[key]});i.oninput=()=>{F[key]=i.value;render()};return i};
   const ss=el("select",{id:"f-sort"});
