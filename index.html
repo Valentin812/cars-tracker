@@ -85,6 +85,12 @@ textarea{width:100%;min-height:38px;resize:vertical;border:1px solid var(--line)
 .fadd{position:relative;border:1px dashed var(--line);border-radius:6px;padding:4px 10px;font-size:.8rem;color:var(--muted);cursor:pointer}
 .fadd input{position:absolute;opacity:0;width:1px;height:1px;left:0;top:0}
 @media (max-width:600px){.fbtn,.fadd{min-height:40px;display:inline-flex;align-items:center}}
+.plat{border:1px solid var(--line);border-radius:999px;padding:0 8px;font-size:.75rem;color:var(--fg)}
+.addf{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;margin:12px 0;display:grid;gap:10px}
+.addg{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
+.addf label{display:grid;gap:3px;font-size:.75rem;color:var(--muted)}
+.addf input,.addf select,.addf textarea{width:100%;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);font:inherit;font-size:16px;padding:7px 8px;min-height:40px}
+.addf textarea{min-height:60px;resize:vertical}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -104,11 +110,12 @@ async function rpc(fn,args){
   const t=await r.text();return t?JSON.parse(t):null;
 }
 const app=document.getElementById("app");
-let rows=[],files=[],filter="active",canWrite=true,loadError="";
+let rows=[],files=[],addOpen=false,filter="active",canWrite=true,loadError="";
 const pending=new Map(),writing=new Map();
 
 const fmtSize=n=>n>=1e6?(n/1e6).toFixed(1)+" МБ":Math.max(1,Math.round(n/1024))+" КБ";
 const filesFor=id=>files.filter(f=>f.car_id===id);
+const platform=u=>/drom\.ru/.test(u||"")?"Дром":/auto\.ru/.test(u||"")?"Авто.ру":/avito\.ru/.test(u||"")?"Авито":"Другая";
 const fmtPrice=n=>typeof n==="number"?n.toLocaleString("ru-RU")+" ₽":"";
 const fmtKm=n=>typeof n==="number"?(n/1000).toLocaleString("ru-RU",{maximumFractionDigits:1})+" тыс. км":"";
 const isFresh=r=>r.added&&(Date.now()-Date.parse(r.added))<36*3600e3;
@@ -176,10 +183,11 @@ function render(){
   app.textContent="";
   const out=el("button",{className:"link"},"Выйти");out.onclick=()=>{try{localStorage.removeItem("cars_creds")}catch(e){}creds=null;rows=[];showLogin()};
   const ref=el("button",{className:"link"},"Обновить");ref.onclick=load;
+const addb=el("button",{className:"link"},"+ Объявление");addb.onclick=()=>{addOpen=!addOpen;render()};
 const chk=el("button",{className:"link"},"Проверить сейчас");chk.onclick=async()=>{chk.disabled=true;chk.textContent="Запускаю…";let t="Запущено, через 3–5 мин нажмите «Обновить»";try{const r=await fetch(SUPABASE_URL+"/functions/v1/check_now",{method:"POST",headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({login:creds&&creds.l,pass:creds&&creds.p})});if(r.status===429)t="Недавно уже запускали, подождите 5 мин";else if(r.status===401)t="Нет доступа";else if(!r.ok)t="Не получилось запустить"}catch(e){t="Нет связи"}chk.textContent=t;setTimeout(()=>{chk.disabled=false;chk.textContent="Проверить сейчас"},10000)};
 
-  app.append(el("div",{className:"head"},el("div",{},el("h1",{},"Подбор 7-местного авто"),el("p",{className:"sub"},"Дром · Тюмень и дальше по удалённости · левый руль, автомат, документы в порядке, без ремонта. Объявлений: "+rows.length+", в работе: "+rows.filter(r=>r.status!=="drop").length+".")),el("div",{className:"row"},ref,chk,out)));
-  app.append(renderTabs());app.append(renderFilters());
+  app.append(el("div",{className:"head"},el("div",{},el("h1",{},"Подбор 7-местного авто"),el("p",{className:"sub"},"Дром · Тюмень и дальше по удалённости · левый руль, автомат, документы в порядке, без ремонта. Объявлений: "+rows.length+", в работе: "+rows.filter(r=>r.status!=="drop").length+".")),el("div",{className:"row"},ref,chk,addb,out)));
+  if(addOpen)app.append(addForm());app.append(renderTabs());app.append(renderFilters());
   if(loadError)app.append(el("p",{className:"note"},loadError));
   const vis=rows.filter(r=>filter==="all"||(filter==="active"?r.status!=="drop":r.status===filter)).filter(passF);
   if(!vis.length){app.append(el("div",{className:"empty"},rows.length?"В этом статусе пока ничего нет.":"Объявлений пока нет."));return}
@@ -192,6 +200,44 @@ const chk=el("button",{className:"link"},"Проверить сейчас");chk.
   if(focusId){const f=document.getElementById(focusId);if(f){f.focus();if(f.tagName==="TEXTAREA"||(f.tagName==="INPUT"&&f.type==="text")){const n=f.value.length;f.setSelectionRange(n,n)}}}
 }
 
+function addForm(){
+  const F={};
+  const mk=(key,label,props={},tag="input")=>{const i=el(tag,props);F[key]=i;return el("label",{},label,i)};
+  const grp=el("select",{});GROUPS.forEach(g=>grp.append(el("option",{value:g},g)));F.grp=grp;
+  const btn=el("button",{type:"submit",className:"link"},"Добавить");
+  const msg=el("div",{className:"msg",role:"status"});
+  const grid=el("div",{className:"addg"},
+    mk("url","Ссылка *",{type:"url",placeholder:"https://…"}),
+    el("label",{},"Группа",grp),
+    mk("title","Название",{type:"text",placeholder:"Kia Sorento Prime"}),
+    mk("year","Год",{inputMode:"numeric"}),
+    mk("price","Цена, ₽",{inputMode:"numeric"}),
+    mk("km","Пробег, км",{inputMode:"numeric"}),
+    mk("city","Город",{type:"text"}),
+    mk("distance","Км от Тюмени",{inputMode:"numeric"}),
+    mk("specs","Двигатель, коробка, привод",{type:"text"}),
+    mk("comment","Комментарий",{},"textarea"));
+  const form=el("form",{className:"addf"},grid,el("div",{className:"row"},btn,msg));
+  form.onsubmit=async e=>{
+    e.preventDefault();
+    const v=k=>F[k].value.trim();
+    const num=k=>{const n=parseInt(v(k).replace(/\s/g,""),10);return isNaN(n)?null:n};
+    const u=v("url");
+    if(!/^https?:\/\//.test(u)){msg.textContent="Вставьте ссылку, она должна начинаться с https://";return}
+    let id=null,m;
+    if((m=u.match(/drom\.ru\/.*?(\d{6,})\.html/)))id=m[1];
+    else if((m=u.match(/auto\.ru\/.*?(\d{6,})/)))id="ar-"+m[1];
+    else if((m=u.match(/avito\.ru\/.*?_(\d{6,})/))||(m=u.match(/avito\.ru\/.*?(\d{8,})/)))id="av-"+m[1];
+    if(!id)id="m-"+Date.now();
+    btn.disabled=true;msg.textContent="Сохраняю…";
+    try{
+      const res=await rpc("car_add",{p_id:id,p_grp:F.grp.value,p_title:v("title"),p_year:num("year"),p_price:num("price"),p_km:num("km"),p_specs:v("specs"),p_city:v("city"),p_distance:num("distance"),p_url:u,p_comment:F.comment.value.trim()});
+      if(res==="exists"){msg.textContent="Такое объявление уже есть в списке";btn.disabled=false;return}
+      addOpen=false;await load();
+    }catch(err){msg.textContent="Не сохранилось: "+err.message;btn.disabled=false}
+  };
+  return form;
+}
 function filesBox(r){
   const box=el("div",{className:"files"});
   filesFor(r.id).forEach(f=>{const b=el("button",{className:"fbtn",type:"button"},"📎 "+f.name+" ("+fmtSize(f.size)+")");b.onclick=()=>openFile(f,b);box.append(b)});
@@ -225,6 +271,7 @@ function card(r){
   d.append(el("div",{className:"top"},a,el("span",{className:"price"},fmtPrice(r.price))));
   const meta=el("div",{className:"meta"});
   [fmtKm(r.km),r.specs,(r.city?r.city+(r.distance>0?" · "+r.distance.toLocaleString("ru-RU")+" км от Тюмени":""):""),r.seller].filter(Boolean).forEach(t=>meta.append(el("span",{},t)));
+  meta.prepend(el("span",{className:"plat"},platform(r.url)));
   if(isFresh(r))meta.append(el("span",{className:"fresh"},"добавлено недавно"));
   if(r.flag)meta.append(el("span",{},"⚠ "+r.flag));
   d.append(meta);
