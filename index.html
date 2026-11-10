@@ -137,7 +137,7 @@ function render(){
   app.textContent="";
   const out=el("button",{className:"link"},"Выйти");out.onclick=()=>{try{localStorage.removeItem("cars_creds")}catch(e){}creds=null;rows=[];showLogin()};
   const ref=el("button",{className:"link"},"Обновить");ref.onclick=load;
-  app.append(el("div",{className:"head"},el("div",{},el("h1",{},"Подбор 7-местного авто"),el("p",{className:"sub"},"Дром · Тюмень и дальше по удалённости · левый руль, автомат, документы в порядке, без ремонта.")),el("div",{className:"row"},ref,out)));
+  app.append(el("div",{className:"head"},el("div",{},el("h1",{},"Подбор 7-местного авто"),el("p",{className:"sub"},"Дром · Тюмень и дальше по удалённости · левый руль, автомат, документы в порядке, без ремонта. Объявлений: "+rows.length+", в работе: "+rows.filter(r=>r.status!=="drop").length+".")),el("div",{className:"row"},ref,out)));
   app.append(renderTabs());
   if(loadError)app.append(el("p",{className:"note"},loadError));
   const vis=rows.filter(r=>filter==="all"||(filter==="active"?r.status!=="drop":r.status===filter));
