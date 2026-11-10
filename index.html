@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Подбор 7-местного авто</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#f3f4f2; --surface:#ffffff; --fg:#1b1f1d; --muted:#66706b; --line:#dde1dd;
+  --accent:#1f6f5c;
+  --s-new:#2a62c9; --s-new-bg:#e6eefb; --s-keep:#1f6f5c; --s-keep-bg:#e2efe9;
+  --s-wrote:#9a6400; --s-wrote-bg:#fbf0d9; --s-drop:#8a8f8c; --s-drop-bg:#ececea;
+  --font:"Golos Text",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#121514; --surface:#1b201e; --fg:#e7ebe9; --muted:#9aa49f; --line:#2c3330; --accent:#5cc3a6;
+  --s-new:#86aef5; --s-new-bg:#1d2a44; --s-keep:#5cc3a6; --s-keep-bg:#1d3a32;
+  --s-wrote:#f0c062; --s-wrote-bg:#3a2f17; --s-drop:#8d9692; --s-drop-bg:#262b29; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px;line-height:1.45}
+.wrap{max-width:860px;margin:0 auto;padding:24px max(16px,env(safe-area-inset-right,0px)) 48px max(16px,env(safe-area-inset-left,0px))}
+h1{font-size:1.6rem;font-weight:700;margin:0 0 4px;text-wrap:balance}
+.sub{color:var(--muted);margin:0 0 16px;font-size:.92rem}
+.head{display:flex;gap:12px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap}
+.link{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;padding:6px 12px;font:inherit;font-size:.85rem;cursor:pointer}
+.bar{position:sticky;top:0;z-index:5;background:var(--bg);padding:max(10px,env(safe-area-inset-top,0px)) 0 10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-bottom:1px solid var(--line)}
+.tab{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:6px 12px;font:inherit;font-size:.88rem;cursor:pointer;display:flex;gap:6px;align-items:center}
+.tab b{font-weight:600;font-variant-numeric:tabular-nums;color:var(--muted)}
+.tab[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.tab[aria-pressed="true"] b{color:var(--bg)}
+:is(.tab,.st,.link,textarea,input,button,a):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.note{margin:12px 0;color:var(--muted);font-size:.9rem}
+h2{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:24px 0 8px;font-weight:600}
+.list{display:grid;gap:8px}
+.car{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:grid;gap:8px}
+.car.drop{opacity:.6}
+.top{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;justify-content:space-between}
+.name{font-weight:600;font-size:1rem;color:var(--fg);text-decoration:none;min-width:0}
+.name:hover{color:var(--accent);text-decoration:underline}
+.price{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.meta{color:var(--muted);font-size:.88rem;display:flex;flex-wrap:wrap;gap:4px 12px}
+.fresh{color:var(--s-new);font-weight:600}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.st{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:6px;padding:4px 10px;font:inherit;font-size:.82rem;cursor:pointer}
+.st[aria-pressed="true"][data-s="new"]{background:var(--s-new-bg);color:var(--s-new);border-color:transparent;font-weight:600}
+.st[aria-pressed="true"][data-s="keep"]{background:var(--s-keep-bg);color:var(--s-keep);border-color:transparent;font-weight:600}
+.st[aria-pressed="true"][data-s="wrote"]{background:var(--s-wrote-bg);color:var(--s-wrote);border-color:transparent;font-weight:600}
+.st[aria-pressed="true"][data-s="drop"]{background:var(--s-drop-bg);color:var(--s-drop);border-color:transparent;font-weight:600}
+textarea{width:100%;min-height:38px;resize:vertical;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);font:inherit;font-size:.9rem;padding:7px 9px}
+.saved{font-size:.78rem;color:var(--muted);min-height:1em}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:10px;padding:20px;color:var(--muted)}
+.login{max-width:420px;margin:12vh auto 0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px;display:grid;gap:12px}
+.login input{width:100%;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);font:inherit;font-size:16px;padding:10px 12px}
+.login button{border:0;border-radius:8px;background:var(--accent);color:#fff;font:inherit;font-weight:600;padding:11px 14px;cursor:pointer;min-height:44px}
+.login button:disabled{opacity:.6}
+.msg{font-size:.9rem;color:var(--muted);min-height:1.2em}
+@media (max-width:600px){
+  body{font-size:16px}
+  .wrap{padding-top:16px;padding-bottom:40px}
+  h1{font-size:1.35rem}
+  .sub{font-size:.88rem}
+  .bar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:6px;margin:0 calc(-1*max(16px,env(safe-area-inset-right,0px))) 0 calc(-1*max(16px,env(safe-area-inset-left,0px)));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .bar::-webkit-scrollbar{display:none}
+  .tab{flex:0 0 auto;min-height:40px;padding:8px 14px;white-space:nowrap}
+  .car{padding:14px;gap:10px}
+  .top{flex-direction:column;gap:2px}
+  .name,.price{font-size:1.05rem}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .st{min-height:44px;font-size:.92rem}
+  textarea{font-size:16px;min-height:56px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL="https://swprtuowqpuwgthigweq.supabase.co";
+const SUPABASE_KEY="sb_publishable_ssarpAvvqN9qsYQE468vjg_mGhppJB_";
+const STATUSES=[["new","Новое"],["keep","Интересно"],["wrote","Написал"],["drop","Не оставляем"]];
+const GROUPS=["Корея","Япония","Китай","Evolute"];
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,detectSessionInUrl:true,flowType:"implicit"}});
+const app=document.getElementById("app");
+let rows=[],filter="active",canWrite=true,loadError="";
+const pending=new Map(),writing=new Map();
+
+const fmtPrice=n=>typeof n==="number"?n.toLocaleString("ru-RU")+" ₽":"";
+const fmtKm=n=>typeof n==="number"?(n/1000).toLocaleString("ru-RU",{maximumFractionDigits:1})+" тыс. км":"";
+const isFresh=r=>r.added&&(Date.now()-Date.parse(r.added))<36*3600e3;
+const el=(tag,props={},...kids)=>{const e=document.createElement(tag);Object.assign(e,props);kids.forEach(k=>e.append(k));return e};
+
+function showLogin(msg){
+  app.textContent="";
+  const email=el("input",{type:"email",id:"email",autocomplete:"email",placeholder:"Ваша почта",required:true});
+  const btn=el("button",{type:"submit"},"Получить ссылку для входа");
+  const out=el("div",{className:"msg",id:"loginmsg",role:"status"},msg||"");
+  const form=el("form",{className:"login"},el("h1",{},"Подбор 7-местного авто"),el("div",{className:"sub"},"Вход по ссылке из письма. Список видит только владелец."),email,btn,out);
+  form.onsubmit=async e=>{
+    e.preventDefault();btn.disabled=true;out.textContent="Отправляю…";
+    const {error}=await sb.auth.signInWithOtp({email:email.value.trim(),options:{emailRedirectTo:location.origin+location.pathname,shouldCreateUser:true}});
+    btn.disabled=false;
+    out.textContent=error?"Не получилось отправить: "+error.message:"Письмо отправлено. Откройте ссылку на этом устройстве.";
+  };
+  app.append(form);
+}
+
+async function load(){
+  const {data,error}=await sb.from("cars").select("*");
+  if(error){loadError="Не удалось загрузить данные: "+error.message}else{loadError="";rows=data}
+  render();
+}
+
+function renderTabs(){
+  const c={active:0,all:rows.length};STATUSES.forEach(([k])=>c[k]=0);
+  rows.forEach(r=>{c[r.status]++;if(r.status!=="drop")c.active++});
+  const bar=el("div",{className:"bar",role:"group"});bar.setAttribute("aria-label","Фильтр по статусу");
+  [["active","В работе"],...STATUSES,["all","Все"]].forEach(([k,l])=>{
+    const b=el("button",{className:"tab",id:"tab-"+k},l+" ",el("b",{},String(c[k]||0)));
+    b.setAttribute("aria-pressed",String(filter===k));b.onclick=()=>{filter=k;render()};bar.append(b)});
+  return bar;
+}
+
+function render(){
+  const focusId=document.activeElement&&document.activeElement.id;
+  app.textContent="";
+  const out=el("button",{className:"link"},"Выйти");out.onclick=async()=>{await sb.auth.signOut();showLogin()};
+  const ref=el("button",{className:"link"},"Обновить");ref.onclick=load;
+  app.append(el("div",{className:"head"},el("div",{},el("h1",{},"Подбор 7-местного авто"),el("p",{className:"sub"},"Дром · Тюмень и дальше по удалённости · левый руль, автомат, документы в порядке, без ремонта.")),el("div",{className:"row"},ref,out)));
+  app.append(renderTabs());
+  if(loadError)app.append(el("p",{className:"note"},loadError));
+  const vis=rows.filter(r=>filter==="all"||(filter==="active"?r.status!=="drop":r.status===filter));
+  if(!vis.length){app.append(el("div",{className:"empty"},rows.length?"В этом статусе пока ничего нет.":"Объявлений пока нет."));return}
+  [...GROUPS,...new Set(vis.map(r=>r.grp).filter(g=>!GROUPS.includes(g)))].forEach(g=>{
+    const items=vis.filter(r=>r.grp===g).sort((a,b)=>(a.distance??9999)-(b.distance??9999)||(a.price||0)-(b.price||0));
+    if(!items.length)return;
+    app.append(el("h2",{},g+" · "+items.length));
+    const list=el("div",{className:"list"});items.forEach(r=>list.append(card(r)));app.append(list);
+  });
+  if(focusId){const f=document.getElementById(focusId);if(f){f.focus();if(f.tagName==="TEXTAREA"){const n=f.value.length;f.setSelectionRange(n,n)}}}
+}
+
+function card(r){
+  const d=el("article",{className:"car"+(r.status==="drop"?" drop":"")});
+  const a=el("a",{className:"name",href:r.url,target:"_blank",rel:"noopener"},r.title+(r.year?", "+r.year:""));
+  d.append(el("div",{className:"top"},a,el("span",{className:"price"},fmtPrice(r.price))));
+  const meta=el("div",{className:"meta"});
+  [fmtKm(r.km),r.specs,r.city,r.seller].filter(Boolean).forEach(t=>meta.append(el("span",{},t)));
+  if(isFresh(r))meta.append(el("span",{className:"fresh"},"добавлено недавно"));
+  if(r.flag)meta.append(el("span",{},"⚠ "+r.flag));
+  d.append(meta);
+  const row=el("div",{className:"row",role:"group"});row.setAttribute("aria-label","Статус");
+  STATUSES.forEach(([k,l])=>{const b=el("button",{className:"st",id:"st-"+r.id+"-"+k,disabled:!canWrite},l);
+    b.dataset.s=k;b.setAttribute("aria-pressed",String(r.status===k));b.onclick=()=>save(r.id,{status:k});row.append(b)});
+  d.append(row);
+  const ta=el("textarea",{id:"c-"+r.id,placeholder:"Комментарий: что ответил продавец, что не так…",value:pending.has(r.id)?pending.get(r.id):(r.comment||""),readOnly:!canWrite});
+  ta.setAttribute("aria-label","Комментарий к "+r.title);
+  const sv=el("div",{className:"saved",id:"sv-"+r.id,role:"status"});
+  let t;ta.oninput=()=>{pending.set(r.id,ta.value);clearTimeout(t);t=setTimeout(()=>commit(r.id,ta.value),900)};
+  ta.onblur=()=>{clearTimeout(t);if(pending.has(r.id))commit(r.id,ta.value)};
+  d.append(ta,sv);return d;
+}
+
+async function commit(id,val){const cur=rows.find(r=>r.id===id);if(cur&&(cur.comment||"")===val){pending.delete(id);return}await save(id,{comment:val});pending.delete(id)}
+
+function save(id,patch){
+  const prev=writing.get(id)||Promise.resolve();
+  const job=prev.then(async()=>{
+    const {error}=await sb.from("cars").update({...patch,updated:new Date().toISOString()}).eq("id",id);
+    const sv=document.getElementById("sv-"+id);
+    if(error){if(sv)sv.textContent="Не сохранилось, попробуйте ещё раз";return}
+    const r=rows.find(x=>x.id===id);if(r)Object.assign(r,patch);
+    if("status" in patch)render();else if(sv)sv.textContent="Сохранено";
+  });
+  writing.set(id,job);return job;
+}
+
+async function start(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(session){if(location.hash.includes("access_token"))history.replaceState(null,"",location.pathname);await load()}else showLogin();
+}
+sb.auth.onAuthStateChange((ev,session)=>{if(ev==="SIGNED_IN"&&session&&!rows.length)start();if(ev==="SIGNED_OUT")showLogin()});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&!document.activeElement?.matches("textarea"))sb.auth.getSession().then(({data:{session}})=>{if(session)load()})});
+start();
+</script>
+</body>
+</html>
