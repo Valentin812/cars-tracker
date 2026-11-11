@@ -105,7 +105,7 @@ textarea{width:100%;min-height:38px;resize:vertical;border:1px solid var(--line)
 const SUPABASE_URL="https://swprtuowqpuwgthigweq.supabase.co";
 const SUPABASE_KEY="sb_publishable_ssarpAvvqN9qsYQE468vjg_mGhppJB_";
 const STATUSES=[["new","Новое"],["keep","Интересно"],["later","Посмотреть позже"],["wrote","Написал"],["drop","Не оставляем"]];
-const GROUPS=["Корея","Япония","Китай","Evolute"];
+const GROUPS=["Корея","Япония","Китай","США","Evolute"];
 let creds=null;
 try{creds=JSON.parse(localStorage.getItem("cars_creds")||"null")}catch(e){}
 async function rpc(fn,args){
@@ -159,7 +159,7 @@ function renderTabs(){
 
 const num=v=>{const n=parseFloat(String(v).replace(/\s/g,"").replace(",","."));return isNaN(n)?null:n};
 const F={model:"",city:"",km:"",price:"",dist:"",sort:"dist"};
-const MODELS=[[/sorento/i,"Kia Sorento Prime"],[/santa\s*fe/i,"Hyundai Grand Santa Fe"],[/carnival/i,"Kia Carnival"],[/cx-?9/i,"Mazda CX-9"],[/tiggo/i,"Chery Tiggo 8"],[/x90/i,"Jetour X90"],[/exeed|\bvx\b/i,"Exeed VX"],[/tenet|\bt9\b/i,"Tenet T9"],[/okavango/i,"Geely Okavango"],[/i-?space|evolute/i,"Evolute i-Space"]];
+const MODELS=[[/sorento/i,"Kia Sorento Prime"],[/santa\s*fe/i,"Hyundai Grand Santa Fe"],[/carnival/i,"Kia Carnival"],[/cx-?9/i,"Mazda CX-9"],[/tiggo/i,"Chery Tiggo 8"],[/x90/i,"Jetour X90"],[/exeed|\bvx\b/i,"Exeed VX"],[/tenet|\bt9\b/i,"Tenet T9"],[/okavango/i,"Geely Okavango"],[/i-?space|evolute/i,"Evolute i-Space"],[/explorer/i,"Ford Explorer"]];
 const modelOf=t=>{const m=MODELS.find(([re])=>re.test(t||""));return m?m[1]:"Другое"};
 const SORTS={dist:["Ближе к Тюмени",(a,b)=>(a.distance??9999)-(b.distance??9999)],pricea:["Цена: дешевле",(a,b)=>(a.price||0)-(b.price||0)],priced:["Цена: дороже",(a,b)=>(b.price||0)-(a.price||0)],kma:["Пробег: меньше",(a,b)=>(a.km??1e9)-(b.km??1e9)],yeard:["Год: новее",(a,b)=>(b.year||0)-(a.year||0)],added:["Сначала новые",(a,b)=>Date.parse(b.added||0)-Date.parse(a.added||0)]};
 const cmp=(a,b)=>SORTS[F.sort][1](a,b)||(a.price||0)-(b.price||0);
