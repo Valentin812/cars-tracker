@@ -43,7 +43,9 @@ h2{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mu
 .name:hover{color:var(--accent);text-decoration:underline}
 .price{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
 .meta{color:var(--muted);font-size:.88rem;display:flex;flex-wrap:wrap;gap:4px 12px}
-.fresh{color:var(--s-new);font-weight:600}
+.fresh{color:var(--s-new);font-weight:700}
+.added{color:var(--muted)}
+.car.fr{border-left:4px solid var(--s-new)}
 .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .st{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:6px;padding:4px 10px;font:inherit;font-size:.82rem;cursor:pointer}
 .st[aria-pressed="true"][data-s="new"]{background:var(--s-new-bg);color:var(--s-new);border-color:transparent;font-weight:600}
@@ -122,7 +124,8 @@ const filesFor=id=>files.filter(f=>f.car_id===id);
 const platform=u=>/drom\.ru/.test(u||"")?"Дром":/auto\.ru/.test(u||"")?"Авто.ру":/avito\.ru/.test(u||"")?"Авито":"Другая";
 const fmtPrice=n=>typeof n==="number"?n.toLocaleString("ru-RU")+" ₽":"";
 const fmtKm=n=>typeof n==="number"?(n/1000).toLocaleString("ru-RU",{maximumFractionDigits:1})+" тыс. км":"";
-const isFresh=r=>r.added&&(Date.now()-Date.parse(r.added))<36*3600e3;
+const isFresh=r=>r.added&&(Date.now()-Date.parse(r.added))<24*3600e3;
+const fmtAdded=r=>{if(!r.added)return"";const d=new Date(r.added),n=new Date();const hm=d.toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"});const day=d.toDateString()===n.toDateString()?"сегодня":d.toDateString()===new Date(n-864e5).toDateString()?"вчера":d.toLocaleDateString("ru-RU",{day:"numeric",month:"short"});return "добавлено "+day+", "+hm};
 const el=(tag,props={},...kids)=>{const e=document.createElement(tag);Object.assign(e,props);kids.forEach(k=>e.append(k));return e};
 
 function showLogin(msg){
@@ -297,13 +300,13 @@ async function attach(r,inp){
   catch(e){alert("Не загрузилось: "+e.message);inp.value=""}
 }
 function card(r){
-  const w=el("article",{id:"car-"+r.id,className:"car"+(r.status==="drop"?" drop":"")+(r.photo?" hasph":"")});const d=el("div",{className:"body"});if(r.photo){const im=el("img",{className:"ph",src:r.photo,loading:"lazy",alt:"",referrerPolicy:"no-referrer"});im.onerror=()=>{im.remove();w.classList.remove("hasph")};w.append(im)}w.append(d);
+  const w=el("article",{id:"car-"+r.id,className:"car"+(isFresh(r)?" fr":"")+(r.status==="drop"?" drop":"")+(r.photo?" hasph":"")});const d=el("div",{className:"body"});if(r.photo){const im=el("img",{className:"ph",src:r.photo,loading:"lazy",alt:"",referrerPolicy:"no-referrer"});im.onerror=()=>{im.remove();w.classList.remove("hasph")};w.append(im)}w.append(d);
   const a=el("a",{className:"name",href:r.url,target:"_blank",rel:"noopener"},r.title+(r.year?", "+r.year:""));
   d.append(el("div",{className:"top"},a,el("span",{className:"price"},fmtPrice(r.price))));
   const meta=el("div",{className:"meta"});
   [fmtKm(r.km),r.specs,(r.city?r.city+(r.distance>0?" · "+r.distance.toLocaleString("ru-RU")+" км от Тюмени":""):""),r.seller].filter(Boolean).forEach(t=>meta.append(el("span",{},t)));
   meta.prepend(el("span",{className:"plat"},platform(r.url)));
-  if(isFresh(r))meta.append(el("span",{className:"fresh"},"добавлено недавно"));
+  meta.append(el("span",{className:isFresh(r)?"fresh":"added"},(isFresh(r)?"● СВЕЖЕЕ · ":"")+fmtAdded(r)));
   if(r.flag)meta.append(el("span",{},"⚠ "+r.flag));
   d.append(meta);
   const row=el("div",{className:"row",role:"group"});row.setAttribute("aria-label","Статус");
