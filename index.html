@@ -51,6 +51,7 @@ h2{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mu
 .st[aria-pressed="true"][data-s="new"]{background:var(--s-new-bg);color:var(--s-new);border-color:transparent;font-weight:600}
 .st[aria-pressed="true"][data-s="keep"]{background:var(--s-keep-bg);color:var(--s-keep);border-color:transparent;font-weight:600}
 .st[aria-pressed="true"][data-s="later"]{background:#ece6fa;color:#5b3fb0;border-color:transparent;font-weight:600}
+.st[aria-pressed="true"][data-s="far"]{background:#fdeede;color:#a85a0c;border-color:transparent;font-weight:600}
 .st[aria-pressed="true"][data-s="wrote"]{background:var(--s-wrote-bg);color:var(--s-wrote);border-color:transparent;font-weight:600}
 .st[aria-pressed="true"][data-s="drop"]{background:var(--s-drop-bg);color:var(--s-drop);border-color:transparent;font-weight:600}
 textarea{width:100%;min-height:38px;resize:vertical;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);font:inherit;font-size:.9rem;padding:7px 9px}
@@ -106,7 +107,7 @@ textarea{width:100%;min-height:38px;resize:vertical;border:1px solid var(--line)
 <script>
 const SUPABASE_URL="https://swprtuowqpuwgthigweq.supabase.co";
 const SUPABASE_KEY="sb_publishable_ssarpAvvqN9qsYQE468vjg_mGhppJB_";
-const STATUSES=[["new","Новое"],["keep","Интересно"],["later","Посмотреть позже"],["wrote","Написал"],["drop","Не оставляем"]];
+const STATUSES=[["new","Новое"],["keep","Интересно"],["later","Посмотреть позже"],["far","Далеко"],["wrote","Написал"],["drop","Не оставляем"]];
 const GROUPS=["Корея","Япония","Китай","США","Evolute"];
 let creds=null;
 try{creds=JSON.parse(localStorage.getItem("cars_creds")||"null")}catch(e){}
@@ -161,7 +162,7 @@ function renderTabs(){
 }
 
 const num=v=>{const n=parseFloat(String(v).replace(/\s/g,"").replace(",","."));return isNaN(n)?null:n};
-const F={model:"",city:"",km:"",price:"",dist:"",far:false,sort:"dist"};
+const F={model:"",city:"",km:"",price:"",dist:"",sort:"dist"};
 const MODELS=[[/sorento/i,"Kia Sorento Prime"],[/santa\s*fe/i,"Hyundai Grand Santa Fe"],[/carnival/i,"Kia Carnival"],[/cx-?9/i,"Mazda CX-9"],[/tiggo/i,"Chery Tiggo 8"],[/x90/i,"Jetour X90"],[/exeed|\bvx\b/i,"Exeed VX"],[/tenet|\bt9\b/i,"Tenet T9"],[/okavango/i,"Geely Okavango"],[/i-?space|evolute/i,"Evolute i-Space"],[/explorer/i,"Ford Explorer"]];
 const modelOf=t=>{const m=MODELS.find(([re])=>re.test(t||""));return m?m[1]:"Другое"};
 const SORTS={dist:["Ближе к Тюмени",(a,b)=>(a.distance??9999)-(b.distance??9999)],pricea:["Цена: дешевле",(a,b)=>(a.price||0)-(b.price||0)],priced:["Цена: дороже",(a,b)=>(b.price||0)-(a.price||0)],kma:["Пробег: меньше",(a,b)=>(a.km??1e9)-(b.km??1e9)],yeard:["Год: новее",(a,b)=>(b.year||0)-(a.year||0)],added:["Сначала новые",(a,b)=>Date.parse(b.added||0)-Date.parse(a.added||0)]};
@@ -172,7 +173,6 @@ function passF(r){
   const km=num(F.km);if(km!==null&&(r.km==null||r.km>km*1000))return false;
   const pr=num(F.price);if(pr!==null&&(r.price==null||r.price>pr*1000))return false;
   const d=num(F.dist);if(d!==null&&(r.distance==null||r.distance>d))return false;
-  if(F.far&&!(Number(r.distance)>1000))return false;
   return true;
 }
 function renderFilters(){
@@ -190,7 +190,7 @@ function renderFilters(){
   const ss=el("select",{id:"f-sort"});
   Object.entries(SORTS).forEach(([k,v])=>ss.append(el("option",{value:k,selected:F.sort===k},v[0])));
   ss.onchange=()=>{F.sort=ss.value;render()};
-  box.append(mk("Авто",ms),mk("Город",cs),mk("Цена до, тыс. ₽",inp("f-price","price","напр. 2000")),mk("Пробег до, тыс. км",inp("f-km","km","напр. 100")),mk("Расстояние до, км",inp("f-dist","dist","напр. 700")),mk("Сортировка",ss),(()=>{const b=el("button",{type:"button",id:"f-far",className:"link"},"Далеко (>1000 км)");const up=()=>{b.style.fontWeight=F.far?"700":"400";b.style.background=F.far?"#e3ecfb":"";b.style.padding="6px 10px";b.style.borderRadius="8px";b.setAttribute("aria-pressed",F.far?"true":"false")};up();b.onclick=()=>{F.far=!F.far;render()};return b})());
+  box.append(mk("Авто",ms),mk("Город",cs),mk("Цена до, тыс. ₽",inp("f-price","price","напр. 2000")),mk("Пробег до, тыс. км",inp("f-km","km","напр. 100")),mk("Расстояние до, км",inp("f-dist","dist","напр. 700")),mk("Сортировка",ss));
   return box;
 }
 function render(){
@@ -201,10 +201,10 @@ function render(){
 const addb=el("button",{className:"link"},"+ Объявление");addb.onclick=()=>{addOpen=!addOpen;render()};
 const chk=el("button",{className:"link"},"Проверить сейчас");chk.onclick=async()=>{chk.disabled=true;chk.textContent="Запускаю…";let t="Запущено, через 3–5 мин нажмите «Обновить»";try{const r=await fetch(SUPABASE_URL+"/functions/v1/check_now",{method:"POST",headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({login:creds&&creds.l,pass:creds&&creds.p})});if(r.status===429)t="Недавно уже запускали, подождите 5 мин";else if(r.status===401)t="Нет доступа";else if(!r.ok)t="Не получилось запустить"}catch(e){t="Нет связи"}chk.textContent=t;setTimeout(()=>{chk.disabled=false;chk.textContent="Проверить сейчас"},10000)};
 
-  app.append(el("div",{className:"head"},el("div",{},el("h1",{},"Подбор 7-местного авто"),el("p",{className:"sub"},"Дром · Тюмень и дальше по удалённости · левый руль, автомат, документы в порядке, без ремонта. Объявлений: "+rows.length+", в работе: "+rows.filter(r=>r.status!=="drop").length+".")),el("div",{className:"row"},ref,chk,addb,out)));
+  app.append(el("div",{className:"head"},el("div",{},el("h1",{},"Подбор 7-местного авто"),el("p",{className:"sub"},"Дром · Тюмень и дальше по удалённости · левый руль, автомат, документы в порядке, без ремонта. Объявлений: "+rows.length+", в работе: "+rows.filter(r=>r.status!=="drop"&&r.status!=="far").length+".")),el("div",{className:"row"},ref,chk,addb,out)));
   if(addOpen)app.append(addForm());app.append(renderTabs());app.append(renderFilters());
   if(loadError)app.append(el("p",{className:"note"},loadError));
-  const vis=rows.filter(r=>filter==="all"||(filter==="active"?r.status!=="drop":r.status===filter)).filter(passF);
+  const vis=rows.filter(r=>filter==="all"||(filter==="active"?(r.status!=="drop"&&r.status!=="far"):r.status===filter)).filter(passF);
   if(!vis.length){app.append(el("div",{className:"empty"},rows.length?"В этом статусе пока ничего нет.":"Объявлений пока нет."));return}
   [...GROUPS,...new Set(vis.map(r=>r.grp).filter(g=>!GROUPS.includes(g)))].forEach(g=>{
     const items=vis.filter(r=>r.grp===g).sort(cmp);
