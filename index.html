@@ -204,7 +204,7 @@ function render(){
   const out=el("button",{className:"link"},"Выйти");out.onclick=()=>{try{localStorage.removeItem("cars_creds")}catch(e){}creds=null;rows=[];showLogin()};
   const ref=el("button",{className:"link"},"Обновить");ref.onclick=load;
 const addb=el("button",{className:"link"},"+ Объявление");addb.onclick=()=>{addOpen=!addOpen;render()};
-const sel=el("a",{className:"link",href:"https://claude.ai/artifact/R9UnW9UYtwwEykordQ6aud",target:"_blank",rel:"noopener"},"Моя выборка");
+const sel=el("a",{className:"link",href:"vybor.html"},"Моя выборка");
 const chk=el("button",{className:"link"},"Проверить сейчас");chk.onclick=async()=>{chk.disabled=true;chk.textContent="Запускаю…";let t="Запущено, через 3–5 мин нажмите «Обновить»";try{const r=await fetch(SUPABASE_URL+"/functions/v1/check_now",{method:"POST",headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({login:creds&&creds.l,pass:creds&&creds.p})});if(r.status===429)t="Недавно уже запускали, подождите 5 мин";else if(r.status===401)t="Нет доступа";else if(!r.ok)t="Не получилось запустить"}catch(e){t="Нет связи"}chk.textContent=t;setTimeout(()=>{chk.disabled=false;chk.textContent="Проверить сейчас"},10000)};
 
   app.append(el("div",{className:"head"},el("div",{},el("h1",{},"Подбор 7-местного авто"),el("p",{className:"sub"},"Дром · Тюмень и дальше по удалённости · левый руль, автомат, документы в порядке, без ремонта. Объявлений: "+rows.length+", в работе: "+rows.filter(r=>r.status!=="drop"&&r.status!=="far").length+".")),el("div",{className:"row"},sel,ref,chk,addb,out)));
