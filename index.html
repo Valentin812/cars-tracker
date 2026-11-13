@@ -51,6 +51,7 @@ h2{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mu
 .st[aria-pressed="true"][data-s="new"]{background:var(--s-new-bg);color:var(--s-new);border-color:transparent;font-weight:600}
 .st[aria-pressed="true"][data-s="keep"]{background:var(--s-keep-bg);color:var(--s-keep);border-color:transparent;font-weight:600}
 .st[aria-pressed="true"][data-s="later"]{background:#ece6fa;color:#5b3fb0;border-color:transparent;font-weight:600}
+.st[aria-pressed="true"]:not([data-s]){background:#fff3c4;color:#7a5a00;border-color:transparent;font-weight:600}
 .st[aria-pressed="true"][data-s="far"]{background:#fdeede;color:#a85a0c;border-color:transparent;font-weight:600}
 .st[aria-pressed="true"][data-s="wrote"]{background:var(--s-wrote-bg);color:var(--s-wrote);border-color:transparent;font-weight:600}
 .st[aria-pressed="true"][data-s="drop"]{background:var(--s-drop-bg);color:var(--s-drop);border-color:transparent;font-weight:600}
@@ -164,12 +165,13 @@ function renderTabs(){
 }
 
 const num=v=>{const n=parseFloat(String(v).replace(/\s/g,"").replace(",","."));return isNaN(n)?null:n};
-const F={model:"",city:"",km:"",price:"",dist:"",sort:"dist"};
+const F={pick:false,model:"",city:"",km:"",price:"",dist:"",sort:"dist"};
 const MODELS=[[/sorento/i,"Kia Sorento Prime"],[/santa\s*fe/i,"Hyundai Grand Santa Fe"],[/carnival/i,"Kia Carnival"],[/cx-?9/i,"Mazda CX-9"],[/tiggo/i,"Chery Tiggo 8"],[/x90/i,"Jetour X90"],[/exeed|\bvx\b/i,"Exeed VX"],[/tenet|\bt9\b/i,"Tenet T9"],[/okavango/i,"Geely Okavango"],[/i-?space|evolute/i,"Evolute i-Space"],[/explorer/i,"Ford Explorer"]];
 const modelOf=t=>{const m=MODELS.find(([re])=>re.test(t||""));return m?m[1]:"Другое"};
 const SORTS={dist:["Ближе к Тюмени",(a,b)=>(a.distance??9999)-(b.distance??9999)],pricea:["Цена: дешевле",(a,b)=>(a.price||0)-(b.price||0)],priced:["Цена: дороже",(a,b)=>(b.price||0)-(a.price||0)],kma:["Пробег: меньше",(a,b)=>(a.km??1e9)-(b.km??1e9)],yeard:["Год: новее",(a,b)=>(b.year||0)-(a.year||0)],added:["Сначала новые",(a,b)=>Date.parse(b.added||0)-Date.parse(a.added||0)]};
 const cmp=(a,b)=>SORTS[F.sort][1](a,b)||(a.price||0)-(b.price||0);
 function passF(r){
+  if(F.pick&&!r.pick)return false;
   if(F.model&&modelOf(r.title)!==F.model)return false;
   if(F.city&&r.city!==F.city)return false;
   const km=num(F.km);if(km!==null&&(r.km==null||r.km>km*1000))return false;
@@ -192,7 +194,8 @@ function renderFilters(){
   const ss=el("select",{id:"f-sort"});
   Object.entries(SORTS).forEach(([k,v])=>ss.append(el("option",{value:k,selected:F.sort===k},v[0])));
   ss.onchange=()=>{F.sort=ss.value;render()};
-  box.append(mk("Авто",ms),mk("Город",cs),mk("Цена до, тыс. ₽",inp("f-price","price","напр. 2000")),mk("Пробег до, тыс. км",inp("f-km","km","напр. 100")),mk("Расстояние до, км",inp("f-dist","dist","напр. 700")),mk("Сортировка",ss));
+  const pk=el("button",{className:"st",id:"f-pick"},"★ Только выбор ("+rows.filter(r=>r.pick).length+")");pk.setAttribute("aria-pressed",String(F.pick));pk.onclick=()=>{F.pick=!F.pick;render()};
+  box.append(pk,mk("Авто",ms),mk("Город",cs),mk("Цена до, тыс. ₽",inp("f-price","price","напр. 2000")),mk("Пробег до, тыс. км",inp("f-km","km","напр. 100")),mk("Расстояние до, км",inp("f-dist","dist","напр. 700")),mk("Сортировка",ss));
   return box;
 }
 function render(){
@@ -201,9 +204,10 @@ function render(){
   const out=el("button",{className:"link"},"Выйти");out.onclick=()=>{try{localStorage.removeItem("cars_creds")}catch(e){}creds=null;rows=[];showLogin()};
   const ref=el("button",{className:"link"},"Обновить");ref.onclick=load;
 const addb=el("button",{className:"link"},"+ Объявление");addb.onclick=()=>{addOpen=!addOpen;render()};
+const sel=el("a",{className:"link",href:"https://claude.ai/artifact/R9UnW9UYtwwEykordQ6aud",target:"_blank",rel:"noopener"},"Моя выборка");
 const chk=el("button",{className:"link"},"Проверить сейчас");chk.onclick=async()=>{chk.disabled=true;chk.textContent="Запускаю…";let t="Запущено, через 3–5 мин нажмите «Обновить»";try{const r=await fetch(SUPABASE_URL+"/functions/v1/check_now",{method:"POST",headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({login:creds&&creds.l,pass:creds&&creds.p})});if(r.status===429)t="Недавно уже запускали, подождите 5 мин";else if(r.status===401)t="Нет доступа";else if(!r.ok)t="Не получилось запустить"}catch(e){t="Нет связи"}chk.textContent=t;setTimeout(()=>{chk.disabled=false;chk.textContent="Проверить сейчас"},10000)};
 
-  app.append(el("div",{className:"head"},el("div",{},el("h1",{},"Подбор 7-местного авто"),el("p",{className:"sub"},"Дром · Тюмень и дальше по удалённости · левый руль, автомат, документы в порядке, без ремонта. Объявлений: "+rows.length+", в работе: "+rows.filter(r=>r.status!=="drop"&&r.status!=="far").length+".")),el("div",{className:"row"},ref,chk,addb,out)));
+  app.append(el("div",{className:"head"},el("div",{},el("h1",{},"Подбор 7-местного авто"),el("p",{className:"sub"},"Дром · Тюмень и дальше по удалённости · левый руль, автомат, документы в порядке, без ремонта. Объявлений: "+rows.length+", в работе: "+rows.filter(r=>r.status!=="drop"&&r.status!=="far").length+".")),el("div",{className:"row"},sel,ref,chk,addb,out)));
   if(addOpen)app.append(addForm());app.append(renderTabs());app.append(renderFilters());
   if(loadError)app.append(el("p",{className:"note"},loadError));
   const vis=rows.filter(r=>filter==="all"||(filter==="active"?(r.status!=="drop"&&r.status!=="far"):r.status===filter)).filter(passF);
@@ -311,8 +315,11 @@ function card(r){
   meta.prepend(el("span",{className:"plat"},platform(r.url)));
   meta.append(el("span",{className:isFresh(r)?"fresh":"added"},(isFresh(r)?"● СВЕЖЕЕ · ":"")+fmtAdded(r)));
   if(r.flag)meta.append(el("span",{},"⚠ "+r.flag));
+  const pb=el("button",{className:"st",id:"pk-"+r.id,disabled:!canWrite},r.pick?"★ В выборке":"☆ В выборку");pb.setAttribute("aria-pressed",String(!!r.pick));
+  pb.onclick=async()=>{try{await rpc("cars_pick",{p_id:r.id,p_pick:!r.pick});r.pick=!r.pick;render()}catch(e){alert("Не сохранилось: "+e.message)}};
   d.append(meta);
   const row=el("div",{className:"row",role:"group"});row.setAttribute("aria-label","Статус");
+  row.append(pb);
   STATUSES.forEach(([k,l])=>{const b=el("button",{className:"st",id:"st-"+r.id+"-"+k,disabled:!canWrite},l);
     b.dataset.s=k;b.setAttribute("aria-pressed",String(r.status===k));b.onclick=()=>save(r.id,{status:k});row.append(b)});
   d.append(row);
