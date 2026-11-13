@@ -111,8 +111,9 @@ const STATUSES=[["new","Новое"],["keep","Интересно"],["later","П�
 const GROUPS=["Корея","Япония","Китай","США","Evolute"];
 let creds=null;
 try{creds=JSON.parse(localStorage.getItem("cars_creds")||"null")}catch(e){}
-async function rpc(fn,args){
-  const r=await fetch(SUPABASE_URL+"/rest/v1/rpc/"+fn,{method:"POST",headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({p_login:creds&&creds.l,p_pass:creds&&creds.p,...args})});
+async function rpcAll(fn){const out=[];for(let o=0;;o+=20){const p=await rpc(fn,{},"?order=id&limit=20&offset="+o);if(!p||!p.length)break;out.push(...p);if(p.length<20)break}return out}
+async function rpc(fn,args,qs){
+  const r=await fetch(SUPABASE_URL+"/rest/v1/rpc/"+fn+(qs||""),{method:"POST",headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({p_login:creds&&creds.l,p_pass:creds&&creds.p,...args})});
   if(!r.ok){let m="";try{m=(await r.json()).message||""}catch(e){}const err=new Error(m||("HTTP "+r.status));err.unauth=(m==="unauthorized"||r.status===401);throw err}
   const t=await r.text();return t?JSON.parse(t):null;
 }
@@ -146,7 +147,7 @@ function showLogin(msg){
 }
 
 async function load(){
-  try{rows=await rpc("cars_list",{});loadError="";try{files=await rpc("car_files_all",{})}catch(e){}}
+  try{rows=await rpcAll("cars_list");loadError="";try{files=await rpc("car_files_all",{})}catch(e){}}
   catch(err){if(err.unauth){try{localStorage.removeItem("cars_creds")}catch(e){}creds=null;showLogin("Сессия устарела, войдите снова.");return}loadError="Не удалось загрузить данные: "+err.message}
   render();
 }
