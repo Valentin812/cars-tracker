@@ -19,7 +19,7 @@ var U="https://swprtuowqpuwgthigweq.supabase.co",K="sb_publishable_ssarpAvvqN9qs
 var ST={new:"Новое",keep:"Интересно",later:"Посмотреть позже",far:"Далеко",wrote:"Написал",drop:"Не оставляем"};
 var f=function(n){return n==null?"—":Number(n).toLocaleString("ru-RU")};
 var e=function(t){var d=document.createElement("div");d.textContent=t==null?"":t;return d.innerHTML};
-async function go(c){for(var k=0;k<6;k++){var ac=new AbortController(),to=setTimeout(function(){ac.abort()},8000);try{var r=await fetch(B[k%2]+"/rest/v1/rpc/cars_list",{method:"POST",signal:ac.signal,headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json"},body:JSON.stringify({p_login:c.l,p_pass:c.p})});clearTimeout(to);if(r.ok)return r.json();if(r.status<500)throw new Error("auth")}catch(x){clearTimeout(to);if(x.message==="auth")throw x}}throw new Error("net")}
+async function go(c){for(var k=0;k<6;k++){var ac=new AbortController(),to=setTimeout(function(){ac.abort()},8000);try{var r=await fetch(B[k%2]+"/rest/v1/rpc/cars_sel",{method:"POST",signal:ac.signal,headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json"},body:JSON.stringify({p_login:c.l,p_pass:c.p})});clearTimeout(to);if(r.ok)return r.json();if(r.status<500)throw new Error("auth")}catch(x){clearTimeout(to);if(x.message==="auth")throw x}}throw new Error("net")}
 function an(all){
 var LIM=function(r){return r.grp==="Китай"?{p:1900000,k:50000}:{p:2300000,k:170000}};
 var rest=all.filter(function(r){return !r.pick&&(r.status==="keep"||r.status==="later")});
