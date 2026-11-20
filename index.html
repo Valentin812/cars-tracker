@@ -113,7 +113,7 @@ const STATUSES=[["new","Новое"],["keep","Интересно"],["later","П�
 const GROUPS=["Корея","Япония","Китай","США","Evolute"];
 let creds=null;
 try{creds=JSON.parse(localStorage.getItem("cars_creds")||"null")}catch(e){}
-async function fetchRetry(fn,url,opt){const R=/^(cars_list|car_files_all)$/.test(fn);const n=R?6:2;const B=[SUPABASE_URL,"https://shrill-sun-761c.valentin-tmn.workers.dev"];let last;for(let k=0;k<n;k++){const bi=((window.__b||0)+k)%2;const ac=new AbortController();const to=setTimeout(()=>ac.abort(),R?6000:30000);try{const r=await fetch(url.replace(SUPABASE_URL,B[bi]),{...opt,signal:ac.signal});clearTimeout(to);window.__b=bi;return r}catch(e){clearTimeout(to);last=e}}throw last}
+async function fetchRetry(fn,url,opt){const R=/^(cars_list|cars_page|car_files_all)$/.test(fn);const n=R?6:2;const B=[SUPABASE_URL,"https://shrill-sun-761c.valentin-tmn.workers.dev"];let last;for(let k=0;k<n;k++){const bi=((window.__b||0)+k)%2;const ac=new AbortController();const to=setTimeout(()=>ac.abort(),R?6000:30000);try{const r=await fetch(url.replace(SUPABASE_URL,B[bi]),{...opt,signal:ac.signal});clearTimeout(to);window.__b=bi;return r}catch(e){clearTimeout(to);last=e}}throw last}
 async function rpcAll(fn){return (await rpc(fn,{}))||[]}
 async function rpc(fn,args,qs){
   const r=await fetchRetry(fn,SUPABASE_URL+"/rest/v1/rpc/"+fn+(qs||""),{method:"POST",headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({p_login:creds&&creds.l,p_pass:creds&&creds.p,...args})});
@@ -150,7 +150,8 @@ function showLogin(msg){
 }
 
 async function load(){
-  try{rows=await rpcAll("cars_list");loadError="";try{files=await rpc("car_files_all",{})}catch(e){}}
+  if(!rows.length)app.textContent="Загрузка…";
+  try{const all=[];for(let o=0;;o+=40){const p=await rpc("cars_page",{p_off:o,p_lim:40});all.push(...p);if(!rows.length)app.textContent="Загрузка… "+all.length;if(p.length<40)break}rows=all;loadError="";try{files=await rpc("car_files_all",{})}catch(e){}}
   catch(err){if(err.unauth){try{localStorage.removeItem("cars_creds")}catch(e){}creds=null;showLogin("Сессия устарела, войдите снова.");return}loadError="Не удалось загрузить данные: "+err.message}
   render();
 }
